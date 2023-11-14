@@ -8,21 +8,21 @@ void tabu_search(int[], int[]);
 int solucao_valida(int[]);
 int valor_total_sacola(int []);
 int valor_item(int);
-bool posiciona_sacola(int, bool [30][30]);
+bool posiciona_sacola(int, int [30][30]);
 void tamanho_item(int, int *, int *);
 
 int main(){
     srand(time(NULL));
-    int itens[8], melhor_solucao[8], i;
+    int itens[8] = {4,1,4,5,4,4,5,4}, melhor_solucao[8], i;
     memset(melhor_solucao,0,sizeof(melhor_solucao));
-    for (i = 0; i < 8; i++)
-    {
-        itens[i] = 4;//(rand()%8)+1;
-    }
+    // for (i = 0; i < 8; i++)
+    // {
+    //     itens[i] = (rand()%8)+1;
+    // }
     tabu_search(itens, melhor_solucao);
     for (i = 0; i < 8; i++)
     {
-        printf("%d ", melhor_solucao[i]);
+        printf("%d ", itens[i]);
     }
     return 0;
 }
@@ -36,25 +36,25 @@ void tabu_search(int itens[], int melhor_solucao[]){
 
 int solucao_valida(int itens[]){
     int valor = valor_total_sacola(itens);
+    printf("Valor TOTAL = %i\n",valor);
     int i, j;
     if(valor > 1000) return 999;
-    bool sacola[30][30];
-    memset(sacola,0,30*30*sizeof(bool));
-    //memset(sacola,0,sizeof(sacola));
+    int sacola[30][30];
+    memset(sacola,0,30*30*sizeof(int));
 
     for (i = 0; i < 8; i++)
     {
         if(!posiciona_sacola(itens[i], sacola))
             valor -= valor_item(itens[i]); //Remove o item da sacola
-        }
+    }
 
-        for(i = 0; i < 30; i++){
-            for(j = 0; j < 30; j++){
-                printf("%d ", sacola[i][j]);
-            }
-            printf("\n");
+    for(i = 0; i < 30; i++){
+        for(j = 0; j < 30; j++){
+            printf("%d ", sacola[i][j]);
         }
-
+        printf("\n");
+    }
+    printf("Valor FINAL = %i\n",valor);
     return valor;
 }
 
@@ -90,54 +90,43 @@ int valor_item(int item){
     }
 }
 
-bool posiciona_sacola(int item, bool sacola[30][30]){
-    int i;
-    int j;
-    bool veri = 1;
-  do{                                   //sacola = calloc(30*30, sizeof(bool *));
+bool posiciona_sacola(int item, int sacola[30][30]){
+    int i, x, y, j;
+    bool cabe;
     for (i = 0; i < 30; i++){
-                                         //sizeof(sacola)/sizeof(*sacola)
-        for (j = 0; j < 30; j++){
-                                        //sizeof(sacola)/sizeof(*(sacola[i]))
-//Procura um espaco vazio
+        for (j = 0; j < 30; j++){        
+            cabe = 1;
             if(sacola[i][j] == 0){
                 int tam_x, tam_y;
-
-//Posiciona o item no espaco
-///erro aqui
-
                 tamanho_item(item, &tam_x, &tam_y);
-                if((i + tam_y > 30) && (j + tam_x > 30))
-//O item não cabe na mochila
-                return false;
-//Verifica se é possível guardar o item sem sobrepor outros itens guardados
-                int x,y;
+                if(j + tam_x > 30){
+                    i++;
+                    break;
+                }
+                if((i + tam_y > 30) && (j + tam_x > 30)) return false; //O item nao cabe na mochila
+
+//Verifica se e possivel guardar o item sem sobrepor outros itens guardados
                 for(y = 0; y < tam_y; y++){
                     for(x = 0; x < tam_x; x++){
-                        if(sacola[y+i][x+j] != 0){
-//A área já está ocupada!
-                            //return false;
-                            veri == 0;
+                        if(sacola[y+i][x+j] != 0){//A area esta ocupada!
+                            cabe = 0;
                         }
                     }
                 }
-//Posiciona o item nos espacos ‘0’
-                if(veri == 1){
+                if(cabe){
                     for(y = 0; y < tam_y; y++)
-                    {
-                        for(x = 0; x < tam_x; x++)
                         {
-                            sacola[y+i][x+j] = item;
+                            for(x = 0; x < tam_x; x++)
+                            {
+                                sacola[y+i][x+j] = item;
+                            }
                         }
-                    }
-                }
-//Posicionou o item na sacola
-                return true;
+                }else break;
+                return cabe;
             }
         }
     }
-    }while(veri == true);
-//Sacola esta’ cheia!
+//Sacola estaï¿½ cheia!
     return false;
     }
 
