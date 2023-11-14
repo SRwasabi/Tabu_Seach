@@ -42,7 +42,7 @@ int main(){
 
 
 void tabu_search(int itens[], int melhor_solucao[]){
-    int lista_tabu[10];
+    int lista_tabu[10],vetor;
     printf("%i\n",solucao_valida(itens));
 
 }
