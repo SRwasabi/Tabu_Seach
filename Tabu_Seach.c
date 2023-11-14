@@ -2,15 +2,28 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#define MAX_ITERACOES 20
 
+
+//escopo de funcoes
 int valor_item(int item);
 void tabu_search(int[], int[]);
-int solucao_valida(int[]);
+enum Erro solucao_valida(int[]);
+int area_total(int);
 int valor_total_sacola(int []);
 int valor_item(int);
 bool posiciona_sacola(int, int [30][30]);
 void tamanho_item(int, int *, int *);
 
+//global variaveis
+
+enum Erro{
+    PRECO,
+    TAMANHO,
+    COUBE
+};
+
+//funcoes
 int main(){
     srand(time(NULL));
     int itens[8] = {4,1,4,5,4,4,5,4}, melhor_solucao[8], i;
@@ -27,23 +40,30 @@ int main(){
     return 0;
 }
 
-#define MAX_ITERACOES 20
+
 void tabu_search(int itens[], int melhor_solucao[]){
     int lista_tabu[10];
-    int Vtotal = solucao_valida(itens);
+    printf("%i\n",solucao_valida(itens));
 
 }
 
-int solucao_valida(int itens[]){
-    int valor = valor_total_sacola(itens);
-    printf("Valor TOTAL = %i\n",valor);
-    int i, j;
-    if(valor > 1000) return 999;
+
+enum Erro solucao_valida(int itens[]){
+    int valor = valor_total_sacola(itens), i, j, area = 0;
     int sacola[30][30];
+    printf("Valor TOTAL = %i\n",valor);
+    
+    if(valor > 100) return PRECO;
+
     memset(sacola,0,30*30*sizeof(int));
 
-    for (i = 0; i < 8; i++)
-    {
+    for(i=0;i<8;i++){
+        area += area_total(itens[i]);
+    }
+
+    if(area>900) return TAMANHO;
+
+    for (i = 0; i < 8; i++){
         if(!posiciona_sacola(itens[i], sacola))
             valor -= valor_item(itens[i]); //Remove o item da sacola
     }
@@ -55,8 +75,16 @@ int solucao_valida(int itens[]){
         printf("\n");
     }
     printf("Valor FINAL = %i\n",valor);
-    return valor;
+    
+    return COUBE;
 }
+
+int area_total(int item){
+    int tam_x, tam_y;
+    tamanho_item(item, &tam_x, &tam_y);
+    return (tam_x*tam_y);
+}
+
 
 int valor_total_sacola(int itens[]){
     int i, total = 0;
@@ -66,11 +94,10 @@ int valor_total_sacola(int itens[]){
     return total;
 }
 
+
 int valor_item(int item){
     switch(item)
     {
-    case 0:
-        return 0;
     case 1:
         return 3;
     case 2:
@@ -93,8 +120,8 @@ int valor_item(int item){
 bool posiciona_sacola(int item, int sacola[30][30]){
     int i, x, y, j;
     bool cabe;
-    for (i = 0; i < 30; i++){
-        for (j = 0; j < 30; j++){        
+    for (j = 0; j < 30; j++){        
+        for (i = 0; i < 30; i++){
             cabe = 1;
             if(sacola[i][j] == 0){
                 int tam_x, tam_y;
@@ -103,7 +130,7 @@ bool posiciona_sacola(int item, int sacola[30][30]){
                     i++;
                     break;
                 }
-                if((i + tam_y > 30) && (j + tam_x > 30)) return false; //O item nao cabe na mochila
+                if((i + tam_y > 30) && (j + tam_x > 30)) return ; //O item nao cabe na mochila
 
 //Verifica se e possivel guardar o item sem sobrepor outros itens guardados
                 for(y = 0; y < tam_y; y++){
@@ -134,41 +161,37 @@ bool posiciona_sacola(int item, int sacola[30][30]){
 void tamanho_item(int item, int * tam_x, int * tam_y){
     switch(item)
     {
-    case 0:
-        *tam_x = 0;
-        * tam_y = 0;
-        return;
     case 1:
         *tam_x = 15;
-        * tam_y = 15;
+        *tam_y = 15;
         return;
     case 2:
         *tam_x = 10;
-        * tam_y = 10;
+        *tam_y = 10;
         return;
     case 3:
         *tam_x = 7;
-        * tam_y = 4;
+        *tam_y = 4;
         return;
     case 4:
         *tam_x = 7;
-        * tam_y = 2;
+        *tam_y = 2;
         return;
     case 5:
         *tam_x = 6;
-        * tam_y = 4;
+        *tam_y = 4;
         return;
     case 6:
         *tam_x = 5;
-        * tam_y = 5;
+        *tam_y = 5;
         return;
     case 7:
         *tam_x = 3;
-        * tam_y = 3;
+        *tam_y = 3;
         return;
     case 8:
         *tam_x = 1;
-        * tam_y = 1;
+        *tam_y = 1;
         return;
     }
 }
