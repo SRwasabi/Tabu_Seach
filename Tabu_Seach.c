@@ -24,7 +24,7 @@ int valor_item(int);
 bool posiciona_sacola(int, int [30][30]);
 void tamanho_item(int, int *, int *);
 int area_ocupada(int [30][30]);
-void log();
+void log(int);
 
 
 //global variaveis
@@ -55,15 +55,24 @@ int main(){
     //     itens[i] = (rand()%8)+1;
     // }
     tabu_search(itens, melhor_solucao);
-    log();
     fclose(logfile);
     return 0;
 }
 
 void tabu_search(int itens[], int melhor_solucao[]){
-    int lista_tabu[10],vetor;
-    solucao.erro = solucao_valida(itens);
-
+    int best=9000000000,iteracao=0,i,j,aux;
+    for(i=0;i<8;i++)for(j=i+1;j<8;j++){
+        solucao.erro = solucao_valida(itens);
+        log(iteracao);
+        aux = itens[j];
+        itens[j] = itens[i];
+        itens[i] = aux;
+        iteracao++;
+    }
+    if(solucao.area_ocupada<best){
+        best = solucao.area_ocupada;
+        memcpy(melhor_solucao, itens, sizeof(itens));
+    }
 }
 
 enum Erro solucao_valida(int itens[]){
@@ -226,9 +235,10 @@ int area_ocupada(int sacola[30][30]){
 }
 
 //funcao para escrever tudo em um arquivo de log
-void log(){
+void log(int iteracao){
     int i, j;
-    fprintf(logfile,"itens: ");
+    fprintf(logfile,"=====================================================\n");
+    fprintf(logfile,"ITERACAO %i\nitens: ",iteracao);
     for (i = 0; i < 8; i++){
         fprintf(logfile,"%d ", itens[i]);
     }
@@ -252,6 +262,6 @@ void log(){
             break;
     }
     fprintf(logfile,"\nArea ocupada: %i\n",solucao.area_ocupada);
-    fprintf(logfile,"Valor FINAL = %i\n",solucao.preco);
+    fprintf(logfile,"Valor FINAL = %i\n\n\n",solucao.preco);
 
 }
