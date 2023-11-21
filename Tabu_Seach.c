@@ -5,18 +5,22 @@
 #include <string.h>
 #define MAX_ITERACOES 20
 
+
 /*
-TODO LIST
+PROFESSOR POR ERRO DE INTEPRETAÇÃO A BUSCA TABU FOI REALIZADA USANDO COMO PARAMETRO O TAMANHO OCUPADO DENTRO DA SACOLA.
+O CODIGO ESTÁ COM ALGUMAS GAMBIARRAS MAS COSTUMA FUNCIONAR
 
-PERMUTAR A LISTA DE ITENS DE MANEIRAS DIFERENTES
-BANIR MOVIMENTOS
-JULGAR A LISTA PELO solucao.area_ocupada.
-
+FELIPE CAMARANO RIBEIRO BOMFIM (7382337)
+JOÃO PEDRO ALMEIDA DA SILVA SANTOS (6086940)
+MANUELLA NASCIMENTO SANTOS (6958226)
+MARIA EDUARDA MIRANDA DA SILVA (6941863)
+MATHEUS NEVES PINHEIRO SILVA (1424365)
 */
 
 //escopo de funcoes
-int valor_item(int item);
-void tabu_search(int[], int[]);
+void aleatoriezar(int);
+int valor_item(int);
+void tabu_search(int[]);
 enum Erro solucao_valida(int[]);
 int area_total(int);
 int valor_total_sacola(int []);
@@ -29,11 +33,13 @@ void log(int);
 
 //global variaveis
 FILE *logfile;
-int itens[8] = {4,1,4,5,4,4,5,4}, sacola[30][30];
+int itens[8];
+int sacola[30][30], melhor_solucao[8];
 enum Erro{
     PRECO,
     TAMANHO,
-    COUBE
+    COUBE,
+    NAOCOUBE
 };
 struct Solucao{
     enum Erro erro;
@@ -47,36 +53,73 @@ struct Solucao{
 //funcoes
 int main(){
     logfile = fopen("logfile.txt","w+");
-    srand(time(NULL)); 
-    int melhor_solucao[8], i;
     memset(melhor_solucao,0,sizeof(melhor_solucao));
-    // for (i = 0; i < 8; i++)
-    // {
-    //     itens[i] = (rand()%8)+1;
-    // }
-    tabu_search(itens, melhor_solucao);
+    aleatoriezar(0);
+    tabu_search(melhor_solucao);
     fclose(logfile);
     return 0;
 }
 
-void tabu_search(int itens[], int melhor_solucao[]){
-    int best=9000000000,iteracao=0,i,j,aux;
-    for(i=0;i<8;i++)for(j=i+1;j<8;j++){
-        solucao.erro = solucao_valida(itens);
-        log(iteracao);
-        aux = itens[j];
-        itens[j] = itens[i];
-        itens[i] = aux;
-        iteracao++;
-    }
-    if(solucao.area_ocupada<best){
-        best = solucao.area_ocupada;
-        memcpy(melhor_solucao, itens, sizeof(itens));
+void aleatoriezar(int seedmult){
+    int i;
+    srand(time(NULL) + seedmult);
+    for(i=0;i<8;i++){
+        itens[i] = rand()%8+1;
     }
 }
 
+void tabu_search(int melhor_solucao[]){
+    int best,iteracao=0,i=0,j,aux,ban=10,seedmult=0;
+    gambiarra:
+    memcpy(melhor_solucao, itens, sizeof(itens));
+    solucao.erro = solucao_valida(itens);
+    while (solucao.erro == PRECO || solucao.erro == TAMANHO){
+        printf("A SACOLA DE ITENS: ");
+        for(i=0;i<8;i++) printf("%i ",melhor_solucao[i]);
+        printf("\nEXCEDEU O PRECO OU O TAMANHO TOTAL\n");
+        ++seedmult;
+        aleatoriezar(seedmult);
+        memcpy(melhor_solucao, itens, sizeof(itens));
+        solucao.erro = solucao_valida(itens);
+    }
+    best = solucao.area_ocupada;
+    log(iteracao++);
+    i=0;
+    while(iteracao<=MAX_ITERACOES && i<8){
+        for(j=i+1;j<8;j++){
+            memcpy(itens, melhor_solucao, sizeof(itens));
+            if(j==ban){
+                j++;
+                while(itens[i]==melhor_solucao[j]&&j<7) j++;
+            }
+            if(ban==7){
+                ban=10;
+                break;
+            }
+            aux = melhor_solucao[j];
+            itens[j] = melhor_solucao[i];
+            itens[i] = aux;
+            solucao.erro = solucao_valida(itens);
+            log(iteracao++);
+            if(solucao.area_ocupada<best && !(solucao.erro == NAOCOUBE)){
+                ban=j;
+                best = solucao.area_ocupada;
+                memcpy(melhor_solucao, itens, sizeof(itens));
+                j=i+1;
+            }
+        }
+        i++;
+    }
+    if(solucao.erro == NAOCOUBE) goto gambiarra;
+    printf("MELHOR SOLUCAO EH: ");
+    for (i = 0; i < 8; i++){
+        printf("%i ",melhor_solucao[i]);
+    }
+    printf("\nAREA OCUPADA: %i",best);
+}
+
 enum Erro solucao_valida(int itens[]){
-    int i, j, tamanhos[8][2];
+    int i;
     memset(sacola,0,30*30*sizeof(int));
     memset(&solucao,0,sizeof(struct Solucao));
     
@@ -97,10 +140,11 @@ enum Erro solucao_valida(int itens[]){
 
 
     for (i = 0; i < 8; i++){
-        if(!posiciona_sacola(itens[i], sacola))
-            solucao.preco -= valor_item(itens[i]); //Remove o item da sacola
+        if(!posiciona_sacola(itens[i], sacola)){
+            solucao.area_ocupada = 999;
+            return NAOCOUBE;
+        }
     }
-
 
     //me diz a area que foi ocupada pelos itens na sacola pela ordenação atual
     solucao.area_ocupada = area_ocupada(sacola);
@@ -124,8 +168,7 @@ int valor_total_sacola(int itens[]){
 }
 
 int valor_item(int item){
-    switch(item)
-    {
+    switch(item){
     case 1:
         return 3;
     case 2:
@@ -150,34 +193,36 @@ bool posiciona_sacola(int item, int sacola[30][30]){
     bool cabe;
     for (j = 0; j < 30; j++){        
         for (i = 0; i < 30; i++){
-            cabe = 1;
+            cabe = true;
             if(sacola[i][j] == 0){
                 int tam_x, tam_y;
                 tamanho_item(item, &tam_x, &tam_y);
-                if(i + tam_y > 30){
+
+                if((i + tam_y) > 30){
                     j++;
                     break;
                 }
-                if((i + tam_y > 30) && (j + tam_x > 30)) return ; //O item nao cabe na mochila
+                if((j + tam_x > 30)){
+                    return cabe = false;
+                }
+                //O item nao cabe na mochila
 
                 //Verifica se e possivel guardar o item sem sobrepor outros itens guardados
                 for(y = 0; y < tam_y; y++){
                     for(x = 0; x < tam_x; x++){
                         if(sacola[y+i][x+j] != 0){//A area esta ocupada!
-                            cabe = 0;
+                            cabe = false;
                         }
                     }
                 }
                 if(cabe){
-                    for(y = 0; y < tam_y; y++)
-                        {
-                            for(x = 0; x < tam_x; x++)
-                            {
-                                sacola[y+i][x+j] = item;
-                            }
+                    for(y = 0; y < tam_y; y++){
+                        for(x = 0; x < tam_x; x++){
+                            sacola[y+i][x+j] = item;
                         }
-                }else break;
+                    }
                 return cabe;
+                }
             }
         }
     }
@@ -242,6 +287,10 @@ void log(int iteracao){
     for (i = 0; i < 8; i++){
         fprintf(logfile,"%d ", itens[i]);
     }
+    fprintf(logfile,"\nMELHOR SOLUCAO:");
+    for (i = 0; i < 8; i++){
+        fprintf(logfile,"%d ", melhor_solucao[i]);
+    }
     fprintf(logfile,"\nValor TOTAL = %i\n",solucao.preco);
     fprintf(logfile,"Area total: %i\n\n",solucao.area_total);
     for(i = 0; i < 30; i++){
@@ -259,6 +308,9 @@ void log(int iteracao){
             break;
         case 2:
             fprintf(logfile,"\nTudo certo!");
+            break;
+        case 3:
+            fprintf(logfile,"\nNao coube!");
             break;
     }
     fprintf(logfile,"\nArea ocupada: %i\n",solucao.area_ocupada);
